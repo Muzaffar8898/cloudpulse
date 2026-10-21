@@ -8,11 +8,32 @@ API_URL = (
     "&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
 )
 
+def validate_weather(current):
+    if not isinstance(current, dict):
+        raise ValueError("Data quality check failed: current weather is missing")
+
+    required_fields = [
+        "temperature_2m",
+        "relative_humidity_2m",
+        "wind_speed_10m",
+    ]
+
+    for field in required_fields:
+        value = current.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"Data quality check failed: {field} must be numeric")
+
+    if not 0 <= current["relative_humidity_2m"] <= 100:
+        raise ValueError("Data quality check failed: humidity is out of range")
+
+    if current["wind_speed_10m"] < 0:
+        raise ValueError("Data quality check failed: wind speed cannot be negative")
 def main():
     with urlopen(API_URL, timeout=20) as response:
         data = json.load(response)
 
     current = data.get("current")
+    validate_weather(current)
     if not isinstance(current, dict):
         raise ValueError("Data quality check failed: current weather is missing")
 
