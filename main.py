@@ -68,26 +68,7 @@ def main():
     current = data.get("current")
     validate_weather(current)
     logger.info("Weather data quality checks passed")
-    if not isinstance(current, dict):
-        raise ValueError("Data quality check failed: current weather is missing")
-
-    required_fields = [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "wind_speed_10m",
-    ]
-
-    for field in required_fields:
-        value = current.get(field)
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValueError(f"Data quality check failed: {field} must be numeric")
-
-    if not 0 <= current["relative_humidity_2m"] <= 100:
-        raise ValueError("Data quality check failed: humidity is out of range")
-
-    if current["wind_speed_10m"] < 0:
-        raise ValueError("Data quality check failed: wind speed cannot be negative")
-
+    
     record = {
         "source": "open-meteo",
         "ingested_at": datetime.now(timezone.utc).isoformat(),
