@@ -1,5 +1,7 @@
 ﻿import json
 import logging
+import time
+from urllib.error import URLError, HTTPError
 from datetime import datetime, timezone
 from urllib.request import urlopen
 
@@ -36,13 +38,31 @@ def validate_weather(current):
 
     if current["wind_speed_10m"] < 0:
         raise ValueError("Data quality check failed: wind speed cannot be negative")
+def fetch_weather(max_attempts=3, delay_seconds=2):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with urlopen(API_URL, timeout=20) as response:
+                return json.load(response)
+
+        except (URLError, TimeoutError) as exc:
+            logger.warning(
+                "Weather API request failed (attempt %s/%s): %s",
+                attempt,
+                max_attempts,
+                exc,
+            )
+
+            if attempt == max_attempts:
+                logger.error("Weather API request failed after all retries")
+                raise
+
+            time.sleep(delay_seconds)
 def main():
     logger.info("Starting CloudPulse weather ingestion")
     try:
-        with urlopen(API_URL, timeout=20) as response:
-            data = json.load(response)
+        data = fetch_weather()
     except Exception:
-        logger.exception("Failed to fetch or parse weather API response")
+        logger.exception("Failed to fetch weather data")
         raise
 
     current = data.get("current")

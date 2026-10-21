@@ -65,4 +65,45 @@ def test_api_failure_is_logged(monkeypatch, caplog):
         with pytest.raises(OSError, match="simulated network failure"):
             main.main()
 
-    assert "Failed to fetch or parse weather API response" in caplog.text
+    assert "Failed to fetch weather data" in caplog.text
+def test_fetch_weather_retries_then_succeeds(monkeypatch):
+    attempts = {"count": 0}
+
+    def flaky_request(*args, **kwargs):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise main.URLError("temporary network failure")
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        return FakeResponse()
+
+    monkeypatch.setattr(main, "urlopen", flaky_request)
+    monkeypatch.setattr(main.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(main.json, "load", lambda response: {"current": {}})
+
+    result = main.fetch_weather(max_attempts=3, delay_seconds=0)
+
+    assert result == {"current": {}}
+    assert attempts["count"] == 2
+
+
+def test_fetch_weather_raises_after_all_attempts_fail(monkeypatch):
+    attempts = {"count": 0}
+
+    def failing_request(*args, **kwargs):
+        attempts["count"] += 1
+        raise main.URLError("simulated network failure")
+
+    monkeypatch.setattr(main, "urlopen", failing_request)
+    monkeypatch.setattr(main.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(main.URLError, match="simulated network failure"):
+        main.fetch_weather(max_attempts=3, delay_seconds=0)
+
+    assert attempts["count"] == 3
