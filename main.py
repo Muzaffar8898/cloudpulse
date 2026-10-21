@@ -1,6 +1,14 @@
 ﻿import json
+import logging
 from datetime import datetime, timezone
 from urllib.request import urlopen
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 API_URL = (
     "https://api.open-meteo.com/v1/forecast"
@@ -29,11 +37,17 @@ def validate_weather(current):
     if current["wind_speed_10m"] < 0:
         raise ValueError("Data quality check failed: wind speed cannot be negative")
 def main():
-    with urlopen(API_URL, timeout=20) as response:
-        data = json.load(response)
+    logger.info("Starting CloudPulse weather ingestion")
+    try:
+        with urlopen(API_URL, timeout=20) as response:
+            data = json.load(response)
+    except Exception:
+        logger.exception("Failed to fetch or parse weather API response")
+        raise
 
     current = data.get("current")
     validate_weather(current)
+    logger.info("Weather data quality checks passed")
     if not isinstance(current, dict):
         raise ValueError("Data quality check failed: current weather is missing")
 
@@ -67,6 +81,7 @@ def main():
     print(f"Temperature: {current['temperature_2m']} °C")
     print(f"Humidity: {current['relative_humidity_2m']}%")
     print(f"Wind speed: {current['wind_speed_10m']} km/h")
+    logger.info("Saved validated data to weather_raw.json")
     print("Saved validated data to weather_raw.json")
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import main
 import pytest
 from main import validate_weather
 
@@ -54,3 +55,14 @@ def test_boolean_temperature_is_rejected():
 def test_missing_current_weather_is_rejected():
     with pytest.raises(ValueError, match="current weather is missing"):
         validate_weather(None)
+def test_api_failure_is_logged(monkeypatch, caplog):
+    def fail_request(*args, **kwargs):
+        raise OSError("simulated network failure")
+
+    monkeypatch.setattr(main, "urlopen", fail_request)
+
+    with caplog.at_level("ERROR", logger="main"):
+        with pytest.raises(OSError, match="simulated network failure"):
+            main.main()
+
+    assert "Failed to fetch or parse weather API response" in caplog.text
