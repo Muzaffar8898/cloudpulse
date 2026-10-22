@@ -17,7 +17,8 @@ st.set_page_config(
 st.title("🌦️ CloudPulse Analytics")
 st.caption("Weather ingestion and daily analytics dashboard")
 
-db_path = Path(DATABASE_PATH)
+demo_path = Path("cloudpulse_demo.db")
+db_path = demo_path if demo_path.exists() else Path(DATABASE_PATH)
 
 if not db_path.exists():
     st.warning(
@@ -133,4 +134,5 @@ with st.expander("View raw observations"):
     st.dataframe(observations, use_container_width=True, hide_index=True)
 
 st.caption("Data source: local SQLite database. Charts reflect stored observations.")
+
 
