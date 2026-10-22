@@ -7,3 +7,7 @@ __pycache__/
 
 # Generated raw data
 weather_raw.json
+
+# Test coverage artifacts
+.coverage
+htmlcov/
