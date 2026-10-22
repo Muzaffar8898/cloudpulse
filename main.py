@@ -35,7 +35,7 @@ def get_retry_config():
 
 API_URL = os.getenv(
     "WEATHER_API_URL",
-    "https://api.open-meteo.com/v1/forecast?latitude=38.6270&longitude=-90.1994&current=temperature_2m,relative_humidity_2m,wind_speed_10m",
+    "https://api.open-meteo.com/v1/forecast?latitude=38.6270&longitude=-90.1994&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=GMT",
 )
 
 def validate_weather(current):
