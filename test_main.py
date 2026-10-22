@@ -195,3 +195,24 @@ def test_malformed_json_is_not_retried(monkeypatch):
         main.fetch_weather(max_attempts=3, delay_seconds=0)
 
     assert attempts["count"] == 1
+
+def test_main_saves_validated_weather(monkeypatch, tmp_path):
+    weather_data = {
+        "current": valid_weather(),
+    }
+
+    monkeypatch.setattr(main, "fetch_weather", lambda: weather_data)
+    monkeypatch.chdir(tmp_path)
+
+    main.main()
+
+    output_file = tmp_path / "weather_raw.json"
+    assert output_file.exists()
+
+    import json
+
+    saved_record = json.loads(output_file.read_text(encoding="utf-8"))
+
+    assert saved_record["source"] == "open-meteo"
+    assert saved_record["weather"] == weather_data
+    assert "ingested_at" in saved_record
