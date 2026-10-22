@@ -147,3 +147,23 @@ def test_retry_delay_over_60_seconds_is_rejected(monkeypatch):
 
     with pytest.raises(ValueError, match="between 0 and 60"):
         main.get_retry_config()
+def test_http_error_is_not_retried(monkeypatch, caplog):
+    attempts = {"count": 0}
+
+    def failing_request(*args, **kwargs):
+        attempts["count"] += 1
+        raise main.HTTPError(
+            "https://example.com",
+            404,
+            "Not Found",
+            None,
+            None,
+        )
+
+    monkeypatch.setattr(main, "urlopen", failing_request)
+
+    with pytest.raises(main.HTTPError):
+        main.fetch_weather(max_attempts=3, delay_seconds=0)
+
+    assert attempts["count"] == 1
+    assert "HTTP status 404" in caplog.text

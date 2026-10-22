@@ -75,6 +75,10 @@ def fetch_weather(
             with urlopen(API_URL, timeout=20) as response:
                 return json.load(response)
 
+        except HTTPError as exc:
+            logger.error("Weather API returned HTTP status %s", exc.code)
+            raise
+
         except (URLError, TimeoutError) as exc:
             logger.warning(
                 "Weather API request failed (attempt %s/%s): %s",
