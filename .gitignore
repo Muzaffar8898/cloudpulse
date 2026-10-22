@@ -5,8 +5,9 @@ __pycache__/
 .env.*
 !.env.example
 
-# Generated raw data
+# Generated weather data
 weather_raw.json
+weather_normalized.json
 
 # Test coverage artifacts
 .coverage
