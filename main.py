@@ -1,6 +1,7 @@
 ﻿import json
 import logging
 import time
+import os
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timezone
 from urllib.request import urlopen
@@ -12,10 +13,9 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-API_URL = (
-    "https://api.open-meteo.com/v1/forecast"
-    "?latitude=38.6270&longitude=-90.1994"
-    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
+API_URL = os.getenv(
+    "WEATHER_API_URL",
+    "https://api.open-meteo.com/v1/forecast?latitude=38.6270&longitude=-90.1994&current=temperature_2m,relative_humidity_2m,wind_speed_10m",
 )
 
 def validate_weather(current):
@@ -38,7 +38,15 @@ def validate_weather(current):
 
     if current["wind_speed_10m"] < 0:
         raise ValueError("Data quality check failed: wind speed cannot be negative")
-def fetch_weather(max_attempts=3, delay_seconds=2):
+def fetch_weather(
+    max_attempts=None,
+    delay_seconds=None,
+):
+    if max_attempts is None:
+        max_attempts = int(os.getenv("WEATHER_MAX_ATTEMPTS", "3"))
+
+    if delay_seconds is None:
+        delay_seconds = float(os.getenv("WEATHER_RETRY_DELAY_SECONDS", "2"))
     for attempt in range(1, max_attempts + 1):
         try:
             with urlopen(API_URL, timeout=20) as response:

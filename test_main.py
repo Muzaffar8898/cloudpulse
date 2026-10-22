@@ -107,3 +107,19 @@ def test_fetch_weather_raises_after_all_attempts_fail(monkeypatch):
         main.fetch_weather(max_attempts=3, delay_seconds=0)
 
     assert attempts["count"] == 3
+def test_fetch_weather_uses_environment_retry_count(monkeypatch):
+    attempts = {"count": 0}
+
+    def failing_request(*args, **kwargs):
+        attempts["count"] += 1
+        raise main.URLError("simulated network failure")
+
+    monkeypatch.setenv("WEATHER_MAX_ATTEMPTS", "5")
+    monkeypatch.setenv("WEATHER_RETRY_DELAY_SECONDS", "0")
+    monkeypatch.setattr(main, "urlopen", failing_request)
+    monkeypatch.setattr(main.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(main.URLError, match="simulated network failure"):
+        main.fetch_weather()
+
+    assert attempts["count"] == 5
