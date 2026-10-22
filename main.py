@@ -2,6 +2,7 @@
 import logging
 import time
 import os
+from database import initialize_database, insert_weather
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timezone
 from urllib.request import urlopen
@@ -106,6 +107,8 @@ def fetch_weather(
             time.sleep(delay_seconds)
 def main():
     logger.info("Starting CloudPulse weather ingestion")
+    initialize_database()
+    logger.info("SQLite database initialized")
     try:
         data = fetch_weather()
     except Exception:
@@ -116,6 +119,8 @@ def main():
     validate_weather(current)
     logger.info("Weather data quality checks passed")
     normalized = normalize_weather(data)
+    insert_weather(normalized, datetime.now(timezone.utc).isoformat())
+    logger.info("Saved normalized weather observation to SQLite")
     record = {
         "source": "open-meteo",
         "ingested_at": datetime.now(timezone.utc).isoformat(),

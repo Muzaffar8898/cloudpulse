@@ -8,6 +8,8 @@ __pycache__/
 # Generated weather data
 weather_raw.json
 weather_normalized.json
+# Generated SQLite databases
+*.db
 
 # Test coverage artifacts
 .coverage

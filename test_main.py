@@ -245,3 +245,32 @@ def test_normalize_weather_rejects_invalid_data():
     with pytest.raises(ValueError, match="humidity is out of range"):
         main.normalize_weather(data)
 
+def test_insert_weather_stores_normalized_record(tmp_path):
+    import sqlite3
+    from database import initialize_database, insert_weather
+
+    db_path = str(tmp_path / "test_weather.db")
+    initialize_database(db_path)
+
+    weather = {
+        "weather_time": "2026-10-22T17:15",
+        "temperature_c": 22.3,
+        "humidity_pct": 44,
+        "wind_speed_kmh": 2.6,
+    }
+
+    insert_weather(weather, "2026-10-22T17:20:00+00:00", db_path)
+
+    connection = sqlite3.connect(db_path)
+    try:
+        row = connection.execute(
+            """
+            SELECT weather_time, temperature_c, humidity_pct, wind_speed_kmh
+            FROM weather_observations
+            """
+        ).fetchone()
+    finally:
+        connection.close()
+
+    assert row == ("2026-10-22T17:15", 22.3, 44.0, 2.6)
+
