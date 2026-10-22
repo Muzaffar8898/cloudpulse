@@ -57,6 +57,18 @@ def validate_weather(current):
 
     if current["wind_speed_10m"] < 0:
         raise ValueError("Data quality check failed: wind speed cannot be negative")
+
+def normalize_weather(data):
+    current = data.get("current")
+    validate_weather(current)
+
+    return {
+        "temperature_c": current["temperature_2m"],
+        "humidity_pct": current["relative_humidity_2m"],
+        "wind_speed_kmh": current["wind_speed_10m"],
+        "weather_time": data["current"].get("time"),
+    }
+
 def fetch_weather(
     max_attempts=None,
     delay_seconds=None,
@@ -103,7 +115,7 @@ def main():
     current = data.get("current")
     validate_weather(current)
     logger.info("Weather data quality checks passed")
-    
+    normalized = normalize_weather(data)
     record = {
         "source": "open-meteo",
         "ingested_at": datetime.now(timezone.utc).isoformat(),
@@ -112,7 +124,8 @@ def main():
 
     with open("weather_raw.json", "w", encoding="utf-8") as file:
         json.dump(record, file, indent=2)
-
+    with open("weather_normalized.json", "w", encoding="utf-8") as file:
+        json.dump(normalized, file, indent=2)
     print("Data quality checks passed!")
     print(f"Temperature: {current['temperature_2m']} °C")
     print(f"Humidity: {current['relative_humidity_2m']}%")

@@ -216,3 +216,32 @@ def test_main_saves_validated_weather(monkeypatch, tmp_path):
     assert saved_record["source"] == "open-meteo"
     assert saved_record["weather"] == weather_data
     assert "ingested_at" in saved_record
+
+def test_normalize_weather_returns_standardized_fields():
+    data = {
+        "current": {
+            **valid_weather(),
+            "time": "2026-10-22T12:00",
+        }
+    }
+
+    result = main.normalize_weather(data)
+
+    assert result == {
+        "temperature_c": 21.3,
+        "humidity_pct": 52,
+        "wind_speed_kmh": 6.6,
+        "weather_time": "2026-10-22T12:00",
+    }
+
+def test_normalize_weather_rejects_invalid_data():
+    data = {
+        "current": {
+            **valid_weather(),
+            "relative_humidity_2m": 150,
+        }
+    }
+
+    with pytest.raises(ValueError, match="humidity is out of range"):
+        main.normalize_weather(data)
+
