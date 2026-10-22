@@ -14,3 +14,5 @@ weather_normalized.json
 # Test coverage artifacts
 .coverage
 htmlcov/
+
+daily_weather_summary.csv
