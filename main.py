@@ -12,6 +12,25 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+def get_retry_config():
+    try:
+        max_attempts = int(os.getenv("WEATHER_MAX_ATTEMPTS", "3"))
+        delay_seconds = float(os.getenv("WEATHER_RETRY_DELAY_SECONDS", "2"))
+    except ValueError as exc:
+        raise ValueError(
+            "Retry configuration must use a whole number of attempts "
+            "and a numeric delay"
+        ) from exc
+
+    if max_attempts < 1:
+        raise ValueError("WEATHER_MAX_ATTEMPTS must be at least 1")
+
+    if not 0 <= delay_seconds <= 60:
+        raise ValueError(
+            "WEATHER_RETRY_DELAY_SECONDS must be between 0 and 60"
+        )
+
+    return max_attempts, delay_seconds
 
 API_URL = os.getenv(
     "WEATHER_API_URL",
@@ -42,11 +61,15 @@ def fetch_weather(
     max_attempts=None,
     delay_seconds=None,
 ):
-    if max_attempts is None:
-        max_attempts = int(os.getenv("WEATHER_MAX_ATTEMPTS", "3"))
+    if max_attempts is None or delay_seconds is None:
+        configured_attempts, configured_delay = get_retry_config()
 
-    if delay_seconds is None:
-        delay_seconds = float(os.getenv("WEATHER_RETRY_DELAY_SECONDS", "2"))
+        if max_attempts is None:
+            max_attempts = configured_attempts
+
+        if delay_seconds is None:
+            delay_seconds = configured_delay
+
     for attempt in range(1, max_attempts + 1):
         try:
             with urlopen(API_URL, timeout=20) as response:

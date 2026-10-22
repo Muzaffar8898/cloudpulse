@@ -123,3 +123,27 @@ def test_fetch_weather_uses_environment_retry_count(monkeypatch):
         main.fetch_weather()
 
     assert attempts["count"] == 5
+def test_invalid_retry_count_is_rejected(monkeypatch):
+    monkeypatch.setenv("WEATHER_MAX_ATTEMPTS", "abc")
+    monkeypatch.setenv("WEATHER_RETRY_DELAY_SECONDS", "2")
+
+    with pytest.raises(ValueError, match="Retry configuration"):
+        main.get_retry_config()
+def test_zero_retry_count_is_rejected(monkeypatch):
+    monkeypatch.setenv("WEATHER_MAX_ATTEMPTS", "0")
+    monkeypatch.setenv("WEATHER_RETRY_DELAY_SECONDS", "2")
+
+    with pytest.raises(ValueError, match="at least 1"):
+        main.get_retry_config()
+def test_negative_retry_delay_is_rejected(monkeypatch):
+    monkeypatch.setenv("WEATHER_MAX_ATTEMPTS", "3")
+    monkeypatch.setenv("WEATHER_RETRY_DELAY_SECONDS", "-1")
+
+    with pytest.raises(ValueError, match="between 0 and 60"):
+        main.get_retry_config()
+def test_retry_delay_over_60_seconds_is_rejected(monkeypatch):
+    monkeypatch.setenv("WEATHER_MAX_ATTEMPTS", "3")
+    monkeypatch.setenv("WEATHER_RETRY_DELAY_SECONDS", "61")
+
+    with pytest.raises(ValueError, match="between 0 and 60"):
+        main.get_retry_config()
