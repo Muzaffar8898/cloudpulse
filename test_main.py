@@ -167,3 +167,31 @@ def test_http_error_is_not_retried(monkeypatch, caplog):
 
     assert attempts["count"] == 1
     assert "HTTP status 404" in caplog.text
+def test_malformed_json_is_not_retried(monkeypatch):
+    attempts = {"count": 0}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def malformed_response(*args, **kwargs):
+        attempts["count"] += 1
+        return FakeResponse()
+
+    def invalid_json(response):
+        raise main.json.JSONDecodeError(
+            "Invalid JSON",
+            "not-json",
+            0,
+        )
+
+    monkeypatch.setattr(main, "urlopen", malformed_response)
+    monkeypatch.setattr(main.json, "load", invalid_json)
+
+    with pytest.raises(main.json.JSONDecodeError):
+        main.fetch_weather(max_attempts=3, delay_seconds=0)
+
+    assert attempts["count"] == 1
